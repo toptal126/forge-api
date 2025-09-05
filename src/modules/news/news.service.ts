@@ -27,7 +27,7 @@ export class NewsService {
 
     return this.httpService
       .get<NewsSearchResponse>(this.braveApiUrl, {
-        params: { q: params.q },
+        params: { q: params.q, spellcheck_off: true },
         headers: {
           Accept: 'application/json',
           'Accept-Encoding': 'gzip',

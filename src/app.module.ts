@@ -10,6 +10,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { UserModule } from './modules/user/user.module';
 import { NewsModule } from './modules/news/news.module';
 import { CronModule } from './modules/cron/cron.module';
+import { BundlerModule } from './modules/bundler/bundler.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CronModule } from './modules/cron/cron.module';
     UserModule,
     NewsModule,
     CronModule,
+    BundlerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

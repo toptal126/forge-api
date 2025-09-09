@@ -6,6 +6,7 @@ import {
 import {
   MoralisTokenHoldersResponse,
   MoralisTokenAnalyticsResponse,
+  MoralisTokenMetadataResponse,
 } from '@modules/web3/third-party-api/moralis.types';
 import { BondingStatus } from '@modules/web3/third-party-api/pumpfun.api.service';
 
@@ -55,6 +56,7 @@ export interface TokenPairStatsResponse {
 export interface TokenAnalysisRawData {
   solanaFmTokenInfo: SolanaFMTokenInfoResponse | null;
   solscanTokenInfo: SolscanTokenInfoResponse | null;
+  moralisTokenMetadata: MoralisTokenMetadataResponse | null;
   tokenHolders: MoralisTokenHoldersResponse;
   tokenAnalytics: MoralisTokenAnalyticsResponse;
   tokenPairStats: TokenPairStatsResponse;

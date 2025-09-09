@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   MoralisTokenHoldersResponse,
   MoralisTokenAnalyticsResponse,
+  MoralisTokenMetadataResponse,
 } from './moralis.types';
 
 /**
@@ -177,6 +178,39 @@ export class MoralisApiService {
     } catch (error) {
       throw new Error(
         `Failed to get token analytics from Moralis: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Fetches token metadata from Moralis API
+   * @param tokenAddress - The Solana token address to query
+   * @returns Promise containing token metadata including name, symbol, logo, description, and social links
+   * @throws Error if the API request fails
+   * @example
+   * const metadata = await moralisApiService.getTokenMetadata('DPK6kar7f76W9Xoqn9HMDqAWf4H9bJ3Cgopj8HkRpump');
+   * console.log(metadata.name); // "Clark's Controversy"
+   */
+  async getTokenMetadata(
+    tokenAddress: string,
+  ): Promise<MoralisTokenMetadataResponse> {
+    try {
+      const { data } = await firstValueFrom(
+        this.httpService.get<MoralisTokenMetadataResponse>(
+          `${this.solBaseUrl}/token/mainnet/${tokenAddress}/metadata`,
+          {
+            headers: {
+              accept: 'application/json',
+              'X-API-Key': this.apiKey,
+            },
+          },
+        ),
+      );
+
+      return data;
+    } catch (error) {
+      throw new Error(
+        `Failed to get token metadata from Moralis: ${error.message}`,
       );
     }
   }

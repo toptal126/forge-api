@@ -8,6 +8,7 @@ import {
   SolscanTokenInfoResponse,
   SolanaFMTokenInfoResponse,
 } from '../../web3/interfaces/web3.interface';
+import { MoralisTokenMetadataResponse } from '../../web3/third-party-api/moralis.types';
 
 function getBondingProgress(bondingStatus?: BondingStatus): number | undefined {
   if (!bondingStatus) return undefined;
@@ -22,32 +23,49 @@ function getBondingProgress(bondingStatus?: BondingStatus): number | undefined {
 }
 
 function getTokenMetadata(
+  moralisMetadata: MoralisTokenMetadataResponse | null,
   solscanInfo: SolscanTokenInfoResponse | null,
   solanaFmInfo: SolanaFMTokenInfoResponse | null,
 ): TokenAnalysisData['metadata'] {
   // At least one of them must be non-null due to the check in transformTokenData
-  if (!solscanInfo && !solanaFmInfo) {
+  if (!moralisMetadata && !solscanInfo && !solanaFmInfo) {
     throw new Error('Token info is required for metadata');
   }
 
+  // Prioritize Moralis metadata, fallback to Solscan, then SolanaFM
   const social = {
-    twitter: solscanInfo?.metadata?.twitter,
-    website: solscanInfo?.metadata?.website,
+    twitter: moralisMetadata?.links?.twitter || solscanInfo?.metadata?.twitter,
+    website: moralisMetadata?.links?.website || solscanInfo?.metadata?.website,
   };
   // Only include social if at least one link exists
   const socialLinks = social.twitter || social.website ? { social } : undefined;
 
   return {
-    name: solscanInfo?.name || solanaFmInfo?.tokenName || '',
-    symbol: solscanInfo?.symbol || solanaFmInfo?.symbol || '',
-    decimals: solscanInfo?.decimals || solanaFmInfo?.decimals || 0,
-    totalSupply: solscanInfo?.supply || '0',
-    creator: solscanInfo?.creator,
-    description: solscanInfo?.metadata?.description,
-    logo: solscanInfo?.icon,
+    name:
+      moralisMetadata?.name ||
+      solscanInfo?.name ||
+      solanaFmInfo?.tokenName ||
+      '',
+    symbol:
+      moralisMetadata?.symbol ||
+      solscanInfo?.symbol ||
+      solanaFmInfo?.symbol ||
+      '',
+    decimals:
+      parseInt(moralisMetadata?.decimals || '0') ||
+      solscanInfo?.decimals ||
+      solanaFmInfo?.decimals ||
+      0,
+    totalSupply: moralisMetadata?.totalSupply || solscanInfo?.supply || '0',
+    creator: solscanInfo?.creator, // Moralis doesn't provide creator info
+    description:
+      moralisMetadata?.description || solscanInfo?.metadata?.description,
+    logo: moralisMetadata?.logo || solscanInfo?.icon,
     tags: [], // TODO: Add tags if available
     verified:
-      solscanInfo?.mint_authority === null || solanaFmInfo?.verified === 'true',
+      moralisMetadata?.isVerifiedContract ||
+      solscanInfo?.mint_authority === null ||
+      solanaFmInfo?.verified === 'true',
     ...socialLinks,
   };
 }
@@ -56,6 +74,7 @@ export function transformTokenData(
   rawData: TokenAnalysisRawData,
 ): TokenAnalysisData {
   const {
+    moralisTokenMetadata,
     solscanTokenInfo,
     solanaFmTokenInfo,
     tokenHolders,
@@ -64,7 +83,7 @@ export function transformTokenData(
     bondingStatus,
   } = rawData;
 
-  if (!solscanTokenInfo && !solanaFmTokenInfo) {
+  if (!moralisTokenMetadata && !solscanTokenInfo && !solanaFmTokenInfo) {
     throw new Error('Token info is required for analysis');
   }
 
@@ -79,7 +98,9 @@ export function transformTokenData(
 
   // At least one of them must be non-null due to the check above
   const address =
-    solscanTokenInfo?.address || (solanaFmTokenInfo?.address as string);
+    moralisTokenMetadata?.mint ||
+    solscanTokenInfo?.address ||
+    (solanaFmTokenInfo?.address as string);
 
   const marketData: MarketDataTransformation = {
     price: solscanTokenInfo?.price || 0,
@@ -102,7 +123,10 @@ export function transformTokenData(
     totalSellers24h:
       tokenAnalytics.totalSellers['24h'] || tokenPairStats.totalSellers['24h'],
     liquidityUSD: tokenPairStats.totalLiquidityUsd,
-    fullyDilutedValuation: solscanTokenInfo?.market_cap || 0,
+    fullyDilutedValuation:
+      parseFloat(moralisTokenMetadata?.fullyDilutedValue || '0') ||
+      solscanTokenInfo?.market_cap ||
+      0,
     bondingProgress: getBondingProgress(bondingStatus),
     dexInfo: {
       activePairs: tokenPairStats.totalActivePairs,
@@ -122,7 +146,11 @@ export function transformTokenData(
 
   return {
     address,
-    metadata: getTokenMetadata(solscanTokenInfo, solanaFmTokenInfo),
+    metadata: getTokenMetadata(
+      moralisTokenMetadata,
+      solscanTokenInfo,
+      solanaFmTokenInfo,
+    ),
     marketData,
     onChainMetrics: {
       holders: {
@@ -175,10 +203,13 @@ export function transformTokenData(
     },
     security: {
       verifiedCreator:
+        moralisTokenMetadata?.isVerifiedContract ||
         solscanTokenInfo?.mint_authority === null ||
         solanaFmTokenInfo?.verified === 'true',
-      contractVerified: true, // Assuming verified if we can get data
-      warnings: [], // TODO: Add security checks
+      contractVerified: moralisTokenMetadata?.isVerifiedContract || true, // Assuming verified if we can get data
+      warnings: moralisTokenMetadata?.possibleSpam
+        ? ['Possible spam token']
+        : [], // TODO: Add more security checks
     },
   };
 }

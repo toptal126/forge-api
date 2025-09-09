@@ -69,3 +69,32 @@ export interface MoralisTokenAnalyticsResponse {
   totalLiquidityUsd: string;
   totalFullyDilutedValuation: string;
 }
+
+export interface MoralisTokenMetadataResponse {
+  mint: string;
+  standard: string;
+  name: string;
+  symbol: string;
+  logo: string;
+  decimals: string;
+  tokenStandard: number;
+  metaplex: {
+    metadataUri: string;
+    masterEdition: boolean;
+    isMutable: boolean;
+    sellerFeeBasisPoints: number;
+    updateAuthority: string;
+    primarySaleHappened: number;
+  };
+  fullyDilutedValue: string;
+  totalSupply: string;
+  totalSupplyFormatted: string;
+  links: {
+    twitter?: string;
+    website?: string;
+    moralis?: string;
+  };
+  description: string;
+  isVerifiedContract: boolean;
+  possibleSpam: boolean;
+}

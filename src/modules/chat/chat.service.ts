@@ -343,6 +343,7 @@ export class ChatService {
       const [
         solanaFmTokenInfo,
         solscanTokenInfo,
+        moralisTokenMetadata,
         tokenHolders,
         tokenAnalytics,
         bondingStatus,
@@ -350,6 +351,7 @@ export class ChatService {
       ] = await Promise.all([
         this.solanaFMApiService.getTokenInfo(address),
         this.solscanApiService.getTokenInfo(address),
+        this.moralisApiService.getTokenMetadata(address),
         this.moralisApiService.getTokenHolders(address),
         this.moralisApiService.getTokenAnalytics(address),
         this.pumpFunApiService
@@ -362,13 +364,14 @@ export class ChatService {
       const rawData: TokenAnalysisRawData = {
         solanaFmTokenInfo: solanaFmTokenInfo,
         solscanTokenInfo: solscanTokenInfo,
+        moralisTokenMetadata: moralisTokenMetadata,
         tokenHolders,
         tokenAnalytics,
         bondingStatus,
         tokenPairStats,
       };
 
-      if (!solanaFmTokenInfo && !solscanTokenInfo) {
+      if (!solanaFmTokenInfo && !solscanTokenInfo && !moralisTokenMetadata) {
         throw new Error('Invalid token address');
       }
 

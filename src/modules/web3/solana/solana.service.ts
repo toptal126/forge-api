@@ -39,18 +39,18 @@ export class SolanaService {
       }
 
       // Check if it's a pump.fun token
-      if (token.toLowerCase().endsWith('pump')) {
-        try {
-          const price = await this.pumpFunApiService.getLatestTokenPrice(token);
-          return {
-            price,
-            currency: 'USD',
-            timestamp: Date.now(),
-          };
-        } catch (error) {
-          console.log(`Pump.fun token error: ${error.message}`);
-        }
+      // if (token.toLowerCase().endsWith('pump')) {
+      try {
+        const price = await this.pumpFunApiService.getLatestTokenPrice(token);
+        return {
+          price,
+          currency: 'USD',
+          timestamp: Date.now(),
+        };
+      } catch (error) {
+        console.log(`Pump.fun token error: ${error.message}`);
       }
+      // }
 
       // Try Alchemy API first
       try {
@@ -124,18 +124,18 @@ export class SolanaService {
         throw new Error(`Unsupported network for Solana service: ${network}`);
       }
 
-      if (token.toLowerCase().endsWith('pump')) {
-        const stats = await this.pumpFunApiService.get24hPriceStats(token);
-        return {
-          volume24h: stats.volume24h,
-          currency: 'USD',
-          timestamp: Date.now(),
-        };
-      }
+      // if (token.toLowerCase().endsWith('pump')) {
+      const stats = await this.pumpFunApiService.get24hPriceStats(token);
+      return {
+        volume24h: stats.volume24h,
+        currency: 'USD',
+        timestamp: Date.now(),
+      };
+      // }
 
       // For non-pump tokens, implement volume fetching from Solscan
       // TODO: Implement volume fetching from Solscan
-      throw new Error('Volume fetching not implemented for non-pump tokens');
+      // throw new Error('Volume fetching not implemented for non-pump tokens');
     } catch (error) {
       throw new HttpException(
         `Failed to fetch token volume data: ${error.message}`,

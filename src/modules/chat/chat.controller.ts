@@ -8,7 +8,9 @@ import {
   Delete,
   Query,
   Headers,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ChatService } from './chat.service';
 import {
   ApiTags,
@@ -35,6 +37,12 @@ class TokenAnalysisDto {
     required: false,
   })
   network?: AlchemyNetwork;
+
+  @ApiProperty({
+    description: 'Conversation ID for the analysis',
+    required: true,
+  })
+  conversationId: string;
 }
 
 @ApiTags('Chat')
@@ -149,6 +157,81 @@ export class ChatController {
     );
   }
 
+  @Post('message/stream')
+  @ApiOperation({ summary: 'Send a message with streaming response' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        conversationId: {
+          type: 'string',
+          description: 'The ID of the conversation',
+        },
+        content: {
+          type: 'string',
+          description: 'The message content',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Message streaming response' })
+  async sendMessageStream(
+    @Headers('x-wallet-address') walletAddress: string,
+    @Body() body: { conversationId: string; content: string },
+    @Res() res: Response,
+  ) {
+    try {
+      // Set headers for streaming
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, x-wallet-address',
+      );
+
+      // Parse potential Solana addresses from the message
+      const potentialAddresses =
+        body.content.match(/[1-9A-HJ-NP-Za-km-z]{32,44}/g) || [];
+      const validAddresses = potentialAddresses.filter((address) => {
+        try {
+          new PublicKey(address);
+          return true;
+        } catch (error) {
+          return false;
+        }
+      });
+
+      // Get the streaming response
+      const stream = await this.chatService.sendMessageStream(
+        body.conversationId,
+        body.content,
+        walletAddress,
+        validAddresses,
+      );
+
+      // Handle stream data
+      stream.on('data', (chunk) => {
+        const data = JSON.stringify(chunk) + '\n';
+        res.write(data);
+      });
+
+      stream.on('end', () => {
+        res.end();
+      });
+
+      stream.on('error', (error) => {
+        console.error('Stream error:', error);
+        res.status(500).json({ error: 'Streaming failed' });
+      });
+    } catch (error) {
+      console.error('Controller error:', error);
+      res.status(500).json({ error: 'Failed to start streaming message' });
+    }
+  }
+
   @Delete('conversation/:id')
   @ApiOperation({ summary: 'Delete a conversation' })
   @ApiParam({
@@ -181,6 +264,57 @@ export class ChatController {
       tokenAnalysisDto,
       walletAddress,
     );
+  }
+
+  @Post('analyze-token/stream')
+  @ApiOperation({
+    summary: 'Analyze token market data with streaming response',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Token analysis streaming response',
+  })
+  async requestTokenAnalysisStream(
+    @Headers('x-wallet-address') walletAddress: string,
+    @Body() tokenAnalysisDto: TokenAnalysisDto,
+    @Res() res: Response,
+  ) {
+    try {
+      // Set headers for streaming
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, x-wallet-address',
+      );
+
+      // Get the streaming response
+      const stream = await this.chatService.requestTokenAnalysisStream(
+        tokenAnalysisDto,
+        walletAddress,
+      );
+
+      // Handle stream data
+      stream.on('data', (chunk) => {
+        const data = JSON.stringify(chunk) + '\n';
+        res.write(data);
+      });
+
+      stream.on('end', () => {
+        res.end();
+      });
+
+      stream.on('error', (error) => {
+        console.error('Stream error:', error);
+        res.status(500).json({ error: 'Streaming failed' });
+      });
+    } catch (error) {
+      console.error('Controller error:', error);
+      res.status(500).json({ error: 'Failed to start streaming analysis' });
+    }
   }
 
   @Get('test-market-status')

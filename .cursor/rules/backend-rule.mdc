@@ -1,0 +1,167 @@
+---
+description: Strong static typing and TypeScript best practices for backend development
+globs:
+  - '**/*.ts'
+  - '**/*.tsx'
+  - '**/*.js'
+  - '**/*.jsx'
+alwaysApply: true
+---
+
+# Backend Strong Typing Rules
+
+## Type Safety Requirements
+
+### 1. Strict TypeScript Configuration
+
+- Always use strict mode in TypeScript configuration
+- Enable `noImplicitAny`, `strictNullChecks`, `strictFunctionTypes`
+- Use `noImplicitReturns` and `noFallthroughCasesInSwitch`
+- Prefer `exactOptionalPropertyTypes` for precise object typing
+
+### 2. Function and Method Typing
+
+- **ALWAYS** explicitly type function parameters and return types
+- Use generic types for reusable functions
+- Prefer function overloads over union types for different parameter combinations
+- Use `void` for functions that don't return values, never `undefined`
+
+```typescript
+// ✅ Good
+function processUserData(user: User): ProcessedUser {
+  return { ...user, processedAt: new Date() };
+}
+
+// ❌ Bad
+function processUserData(user) {
+  return { ...user, processedAt: new Date() };
+}
+```
+
+### 3. Interface and Type Definitions
+
+- Define interfaces for all data structures, especially API responses
+- Use `interface` for object shapes that might be extended
+- Use `type` for unions, intersections, and computed types
+- Prefer branded types for domain-specific values (IDs, emails, etc.)
+
+```typescript
+// ✅ Good
+interface User {
+  id: UserId;
+  email: EmailAddress;
+  createdAt: Date;
+  profile: UserProfile;
+}
+
+type UserId = string & { readonly __brand: 'UserId' };
+type EmailAddress = string & { readonly __brand: 'EmailAddress' };
+```
+
+### 4. Error Handling
+
+- Use Result/Either patterns instead of throwing exceptions
+- Define specific error types for different failure scenarios
+- Always handle async operations with proper error typing
+
+```typescript
+// ✅ Good
+type Result<T, E = Error> =
+  | { success: true; data: T }
+  | { success: false; error: E };
+
+async function fetchUser(id: UserId): Promise<Result<User, UserNotFoundError>> {
+  // implementation
+}
+```
+
+### 5. Database and API Typing
+
+- Type all database models and DTOs explicitly
+- Use discriminated unions for different entity states
+- Define separate types for input, output, and internal representations
+- Use Zod or similar for runtime validation with TypeScript inference
+
+### 6. Dependency Injection and Services
+
+- Type all service interfaces explicitly
+- Use dependency injection with typed containers
+- Define clear contracts between service layers
+
+### 7. Configuration and Environment
+
+- Type all environment variables and configuration objects
+- Use branded types for sensitive configuration values
+- Validate configuration at startup with proper error handling
+
+### 8. Testing
+
+- Type all test data and mocks explicitly
+- Use factory functions with proper typing for test data generation
+- Type test utilities and helpers
+
+## Code Quality Standards
+
+### 1. Avoid `any` Type
+
+- Never use `any` unless absolutely necessary (legacy code integration)
+- Use `unknown` for truly unknown data, then narrow with type guards
+- Prefer `Record<string, unknown>` over `any` for object types
+
+### 2. Null Safety
+
+- Use optional chaining (`?.`) and nullish coalescing (`??`)
+- Prefer non-null assertion (`!`) only when you're certain of non-null values
+- Use definite assignment assertions (`!`) sparingly and document why
+
+### 3. Async/Await Patterns
+
+- Always type Promise return values
+- Use proper error handling with typed catch blocks
+- Prefer async/await over Promise chains for readability
+
+### 4. Generic Constraints
+
+- Use generic constraints to limit type parameters
+- Prefer `extends` over `keyof` when possible for better inference
+- Use mapped types for transforming object types
+
+## Performance Considerations
+
+### 1. Type-Only Imports
+
+- Use `import type` for types that are only used in type positions
+- Separate runtime and compile-time dependencies
+
+### 2. Avoid Complex Union Types
+
+- Prefer discriminated unions over complex type unions
+- Use type guards to narrow union types safely
+
+### 3. Utility Types
+
+- Leverage built-in utility types (`Partial`, `Pick`, `Omit`, `Record`)
+- Create custom utility types for common patterns
+- Use template literal types for string manipulation
+
+## Documentation and Comments
+
+### 1. JSDoc Comments
+
+- Document all public APIs with JSDoc comments
+- Include type information in JSDoc when TypeScript types aren't sufficient
+- Document complex generic type parameters
+
+### 2. Type Documentation
+
+- Use comments to explain complex type definitions
+- Document the purpose of branded types and their constraints
+- Explain non-obvious type transformations
+
+## Enforcement
+
+- All code must pass TypeScript strict mode compilation
+- No `any` types without explicit justification
+- All public APIs must have explicit return types
+- All functions must have parameter types
+- Use ESLint rules: `@typescript-eslint/no-explicit-any`, `@typescript-eslint/explicit-function-return-type`

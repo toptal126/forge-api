@@ -6,7 +6,7 @@ import { Readable } from 'stream';
 // Centralized prompts to avoid duplication
 const TOKEN_ANALYST_PROMPT = `You are an expert Web3 financial analyst specializing in blockchain token analysis. Provide detailed, data-driven insights using market metrics, on-chain analytics, and security assessments. Format responses in professional markdown with clear sections and bullet points for key metrics. Include risk disclaimers and maintain objectivity in analysis.
 
-Important: Even if a token shows poor fundamentals or bad reputation, experienced traders may still consider meme trading opportunities. Always mention that skilled traders can profit from volatility regardless of token quality, but emphasize the high-risk nature of such strategies.`;
+Important: Even if a token shows poor fundamentals or bad reputation, experienced traders may still consider meme trading opportunities. Always mention that skilled traders can profit from volatility regardless of token quality.`;
 
 @Injectable()
 export class OpenAIService {
